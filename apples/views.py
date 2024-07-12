@@ -1,4 +1,4 @@
-from .models import Municipality, Establishment, Category, Service, Apple, AppleService, Women
+from .models import Municipality, Establishment, Category, Service, Apple, AppleService, Women, Attendance
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse 
 from django.core.exceptions import ObjectDoesNotExist
@@ -285,6 +285,53 @@ def edit_women(request):
         'profile_picture': women.user.profile_picture.url
     }}, status=200)
 
+
+#CRUD ATTENDANCE
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsWomenRole])
+def create_attendance(request):
+    user = request.user
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'response':'Invalid JSON'}, status=400)
+
+    apple = data.get('apple')
+    apple_service = data.get('apple_service')
+    date = data.get('date')
+
+    try:
+        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
+        if date < datetime.now():
+            return JsonResponse({'response': 'The date and time cannot be in the past'}, status=400)
+    except ValueError:
+        return JsonResponse({'response': 'Invalid date format'}, status=400)
+    
+    if not Apple.objects.filter(apple=apple).exists():
+        return JsonResponse({'response':'The apple with that id was not found'}, status=404)
+
+    if not AppleService.objects.filter(pk=apple_service).exists():
+        return JsonResponse({'response':'The service with that id was not found'}, status=404)
+
+    if Attendance.objects.filter(date=date, apple=apple, apple_service=apple_service).exists():
+        return JsonResponse({'response': 'There is already an attendance scheduled for this date and time'}, status=409)
+    
+    new_attendance = Attendance(
+        user= user,
+        apple=apple,
+        apple_service= apple_service,
+        date=date
+    )
+
+    new_attendance.save()
+
+    return JsonResponse({'attendance':'Attendance created successfully'}, status=201)
+    
+
+
 #CRUD MUNICIPALITIES
 @csrf_exempt
 def municipalities(request):
@@ -397,13 +444,13 @@ def establishments(request):
 @csrf_exempt
 def create_establishment(request):
     if request.method == 'POST':
-        code = request.POST.get('code')
+        code = request.POST.get('code', '')
         name = request.POST.get('name')
         responsible = request.POST.get('responsible')
         direction = request.POST.get('direction')
         image = request.FILES.get('image')
 
-        if len(code) != 10 or len(name) <= 2 or len(name) >= 100 or len(responsible) <= 2 or len(responsible) > 50 or len(direction) <= 2 or len(direction) > 100:
+        if len(name) <= 2 or len(name) >= 100 or len(responsible) <= 2 or len(responsible) > 50 or len(direction) <= 2 or len(direction) > 100:
             return JsonResponse({'response': 'Parameters with incorrect length'}, status=400)
 
         if Establishment.objects.filter(name=name).exists():
@@ -650,7 +697,7 @@ def create_service (request):
     if request.method == "POST":
         category_id = request.POST.get('category')
         establishment_id = request.POST.get('establishment')
-        code = request.POST.get('code')
+        code = request.POST.get('code', '')
         name = request.POST.get('name')
         description = request.POST.get('description')
         image = request.FILES.get('image')
@@ -665,7 +712,7 @@ def create_service (request):
         except Establishment.DoesNotExist:
             return JsonResponse({'response':'Establishment not was found'}, status=404)
         
-        if len(code) != 10 or len(name) <= 2 or len(name) > 100 or len(description) <= 2 or len(description) > 300:
+        if len(name) <= 2 or len(name) > 100 or len(description) <= 2 or len(description) > 300:
             return JsonResponse({'response': 'Parameters with incorrect length'}, status=400)
 
         if Service.objects.filter(name=name).exists():

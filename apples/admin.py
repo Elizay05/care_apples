@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Municipality, Establishment, Category, Service, Apple, AppleService, User, Women
+from .models import Municipality, Establishment, Category, Service, Apple, AppleService, User, Women, Attendance
 
 # Register your models here.
 
@@ -11,6 +11,10 @@ class CustomUserAdmin(UserAdmin):
 @admin.register(Women)
 class CustomWomenAdmin(admin.ModelAdmin):
     list_display = ('user', 'document_type', 'identification_number', 'name', 'phone', 'city', 'direction', 'ocupation')
+
+@admin.register(Attendance)
+class CustomAttendanceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'apple', 'apple_service', 'date')
 
 @admin.register(Municipality)
 class MunicipalityAdmin(admin.ModelAdmin):
@@ -34,4 +38,4 @@ class AppleAdmin(admin.ModelAdmin):
 
 @admin.register(AppleService)
 class AppleServiceAdmin(admin.ModelAdmin):
-    list_display = ["apple", "service"]
+    list_display = ["id","apple", "service"]

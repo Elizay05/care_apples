@@ -48,6 +48,15 @@ class Women(models.Model):
     def __str__(self):
         return self.name
 
+class Attendance(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    apple = models.ForeignKey('Apple', on_delete=models.CASCADE)
+    apple_service = models.ForeignKey('AppleService', on_delete=models.CASCADE)
+    date = models.DateTimeField()
+
+    def __str__(self):
+        return self.id
+
 class Municipality(models.Model):
     name = models.CharField(max_length=250, unique=True)
     image = models.ImageField(upload_to="municipalities/", default="municipalities/default.jpg", blank=True)
